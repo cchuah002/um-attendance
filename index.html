@@ -7,58 +7,52 @@
 <h3>Verifying your location...</h3>
 
 <script>
-const classLat = 3.1166802971345544;     // Replace
-const classLon = 101.65595555515158;   // Replace
-const allowedRadius = 50;      // meters
+const classLat = 3.117484976644323;
+const classLon = 101.65566344433793;
+const allowedRadius = 50; // meters
 
 function toRad(x) {
   return x * Math.PI / 180;
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
+function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
 
   const a =
     Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon/2) *
+    Math.sin(dLon/2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
 
-navigator.geolocation.getCurrentPosition(
-  function(position) {
+navigator.geolocation.getCurrentPosition(function(position) {
 
-    const userLat = position.coords.latitude;
-    const userLon = position.coords.longitude;
+  const studentLat = position.coords.latitude;
+  const studentLon = position.coords.longitude;
 
-    const distance = getDistance(userLat, userLon, classLat, classLon);
+  const distance = calculateDistance(classLat, classLon, studentLat, studentLon);
 
-    if (distance <= allowedRadius) {
-
-      const formURL = "https://forms.cloud.microsoft/r/bQK1k45cRy";
-
-    } else {
-      document.body.innerHTML =
-        "<h2 style='color:red'>You are not within class area.</h2>" +
-        "<p>Distance: " + Math.round(distance) + " meters</p>";
-    }
-
-  },
-  function(error) {
-    document.body.innerHTML =
-      "<h3>Location failed.</h3>" +
-      "<p>Please use Chrome and enable precise location.</p>";
-  },
-  {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0
+  let status = "INVALID";
+  if(distance <= allowedRadius){
+      status = "VALID";
   }
-);
+
+const formURL =
+  "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
+  + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
+  + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
+  + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
+  + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
+
+window.location.href = formURL;
+
+});
 </script>
 
 </body>
