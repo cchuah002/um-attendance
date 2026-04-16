@@ -2,9 +2,26 @@
 <html>
 <head>
   <title>UM Attendance Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    iframe {
+      width: 100%;
+      height: 900px;
+      border: none;
+      margin-top: 20px;
+    }
+  </style>
 </head>
+
 <body>
-<h3>Verifying your location...</h3>
+
+<h3 id="statusText">Verifying your location...</h3>
+
+<!-- Form will load here -->
+<iframe id="formFrame" style="display:none;"></iframe>
 
 <script>
 const classLat = 3.116635724520063;
@@ -17,8 +34,8 @@ function toRad(x) {
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
-  const dLat = toRad(lat2-lat1);
-  const dLon = toRad(lon2-lon1);
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
 
   const a =
     Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -43,15 +60,23 @@ navigator.geolocation.getCurrentPosition(function(position) {
       status = "VALID";
   }
 
-const formURL =
-  "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
-  + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
-  + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
-  + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
-  + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
+  document.getElementById("statusText").innerHTML =
+      "Location verified. Loading attendance form...";
 
-window.location.href = formURL;
+  const formURL =
+    "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
+    + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
+    + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
+    + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
+    + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
 
+  const iframe = document.getElementById("formFrame");
+  iframe.src = formURL;
+  iframe.style.display = "block";
+
+}, function(error){
+  document.getElementById("statusText").innerHTML =
+      "Location access denied. Please enable GPS and refresh.";
 });
 </script>
 
