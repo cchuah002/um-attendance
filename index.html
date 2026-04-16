@@ -41,11 +41,6 @@ navigator.geolocation.getCurrentPosition(
 
       const formURL = "https://forms.cloud.microsoft/r/bQK1k45cRy";
 
-      window.location.href =
-        formURL +
-        "&FIELD_LAT=" + userLat +
-        "&FIELD_LON=" + userLon;
-
     } else {
       document.body.innerHTML =
         "<h2 style='color:red'>You are not within class area.</h2>" +
