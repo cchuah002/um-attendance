@@ -26,7 +26,7 @@
 <script>
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
-const allowedRadius = 20; // meters
+const allowedRadius = 50; // ✅ Updated to 50 meters
 
 function toRad(x) {
   return x * Math.PI / 180;
@@ -52,31 +52,44 @@ navigator.geolocation.getCurrentPosition(function(position) {
 
   const studentLat = position.coords.latitude;
   const studentLon = position.coords.longitude;
+  const accuracy = position.coords.accuracy;
 
   const distance = calculateDistance(classLat, classLon, studentLat, studentLon);
 
   let status = "INVALID";
-  if(distance <= allowedRadius){
+
+  // ✅ Validate BOTH distance and GPS accuracy
+  if(distance <= allowedRadius && accuracy <= 50){
       status = "VALID";
+
+      document.getElementById("statusText").innerHTML =
+          "Location verified. Loading attendance form...";
+
+      const formURL =
+        "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
+        + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
+        + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
+        + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
+        + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
+
+      const iframe = document.getElementById("formFrame");
+      iframe.src = formURL;
+      iframe.style.display = "block";
+
+  } else {
+
+      document.getElementById("statusText").innerHTML =
+          "❌ You are not within the allowed location (50 m) or GPS is not accurate enough.";
+
   }
-
-  document.getElementById("statusText").innerHTML =
-      "Location verified. Loading attendance form...";
-
-  const formURL =
-    "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
-    + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
-    + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
-    + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
-    + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
-
-  const iframe = document.getElementById("formFrame");
-  iframe.src = formURL;
-  iframe.style.display = "block";
 
 }, function(error){
   document.getElementById("statusText").innerHTML =
       "Location access denied. Please enable GPS and refresh.";
+}, {
+  enableHighAccuracy: true,  // ✅ Force GPS instead of WiFi
+  timeout: 10000,
+  maximumAge: 0
 });
 </script>
 
