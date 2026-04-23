@@ -8,9 +8,6 @@
       text-align: center;
       margin-top: 40px;
     }
-    .info {
-      margin-top: 15px;
-    }
     #debugPanel {
       display: none;
       border: 1px solid #ccc;
@@ -22,6 +19,9 @@
       margin-right: auto;
       background: #f9f9f9;
     }
+    .info {
+      margin-top: 15px;
+    }
   </style>
 </head>
 
@@ -30,40 +30,49 @@
 <h3 id="statusText">Verifying your location...</h3>
 <div id="details" class="info"></div>
 
-<br>
-<label>
-  <input type="checkbox" id="debugToggle"> Enable Debug Mode
-</label>
-
+<!-- 🔐 Secure Debug Panel (hidden by default) -->
 <div id="debugPanel">
-  <h4>🛠 Debug Panel</h4>
+  <h4>🛠 Debug Mode (Admin Only)</h4>
   <div id="debugContent"></div>
   <br>
   <a id="debugLink" href="#" target="_blank">🔗 Open Form Manually</a>
 </div>
 
 <script>
-let DEBUG = false;
+/* =========================
+   🔐 SECURE DEBUG MODE
+========================= */
+const urlParams = new URLSearchParams(window.location.search);
 
-document.getElementById("debugToggle").addEventListener("change", function() {
-  DEBUG = this.checked;
-  document.getElementById("debugPanel").style.display =
-    DEBUG ? "block" : "none";
-});
+// Only this key activates debug
+const DEBUG_KEY = "UM_ADMIN_2026";
 
-// ---------- CONFIG ----------
+let DEBUG = urlParams.get("debug") === DEBUG_KEY;
+
+if (DEBUG) {
+  document.getElementById("debugPanel").style.display = "block";
+  console.log("🔐 Debug Mode Enabled");
+}
+
+/* =========================
+   CONFIG
+========================= */
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
 const allowedRadius = 100;
 
-// ⏰ Time windows
+/* =========================
+   TIME WINDOWS
+========================= */
 const sub1Start = { h: 13, m: 0 };
 const sub1End   = { h: 13, m: 30 };
 
 const sub2Start = { h: 15, m: 0 };
 const sub2End   = { h: 15, m: 30 };
 
-// ---------- FUNCTIONS ----------
+/* =========================
+   FUNCTIONS
+========================= */
 function isWithin(start, end){
   const now = new Date();
   const s = new Date(); s.setHours(start.h, start.m, 0);
@@ -87,7 +96,9 @@ function calculateDistance(lat1, lon1, lat2, lon2){
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ---------- MAIN ----------
+/* =========================
+   MAIN
+========================= */
 navigator.geolocation.getCurrentPosition(function(position){
 
   const lat = position.coords.latitude;
@@ -99,34 +110,48 @@ navigator.geolocation.getCurrentPosition(function(position){
   let status = (dist <= allowedRadius) ? "VALID" : "INVALID";
   let submissionType = "";
 
-  // ---------- Submission logic ----------
-  if(isWithin(sub1Start, sub1End)){
-    submissionType = "Submission 1";
-    localStorage.setItem("attend1", "done");
+  /* =========================
+     SUBMISSION LOGIC
+  ========================= */
+  if (DEBUG) {
 
-  } else if(isWithin(sub2Start, sub2End)){
-
-    if(localStorage.getItem("attend1") === "done"){
-      submissionType = "Submission 2";
-    } else {
-      document.getElementById("statusText").innerHTML =
-        "❌ Submission #1 required before Submission #2.";
-      return;
-    }
+    // 🔐 bypass everything in debug
+    submissionType = "DEBUG MODE";
 
   } else {
-    document.getElementById("statusText").innerHTML =
-      "❌ Not within allowed submission time.";
-    return;
+
+    if(isWithin(sub1Start, sub1End)){
+      submissionType = "Submission 1";
+      localStorage.setItem("attend1", "done");
+
+    } else if(isWithin(sub2Start, sub2End)){
+
+      if(localStorage.getItem("attend1") === "done"){
+        submissionType = "Submission 2";
+      } else {
+        document.getElementById("statusText").innerHTML =
+          "❌ Submission #1 required before Submission #2.";
+        return;
+      }
+
+    } else {
+      document.getElementById("statusText").innerHTML =
+        "❌ Not within allowed submission time.";
+      return;
+    }
   }
 
-  // ---------- Display basic info ----------
+  /* =========================
+     DISPLAY INFO
+  ========================= */
   document.getElementById("details").innerHTML =
     "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
     "<b>Status:</b> <span style='color:" + (status==="VALID"?"green":"red") + "'>" + status + "</span><br>" +
     "<b>Submission:</b> " + submissionType;
 
-  // ---------- Form URL ----------
+  /* =========================
+     FORM URL
+  ========================= */
   const formURL =
     "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUMlhWNlg3NzAwVUVNNk5UOTVZQzhLWEVMSy4u"
     + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(lat)
@@ -135,11 +160,13 @@ navigator.geolocation.getCurrentPosition(function(position){
     + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status)
     + "&r097aa67817864881a7c8c01602808a1b=" + encodeURIComponent(submissionType);
 
-  // ---------- Debug mode ----------
+  /* =========================
+     DEBUG MODE OUTPUT
+  ========================= */
   if (DEBUG) {
 
     document.getElementById("statusText").innerHTML =
-      "🛠 Debug Mode: Redirect disabled";
+      "🛠 Debug Mode (No Redirect)";
 
     document.getElementById("debugContent").innerHTML =
       "<b>Latitude:</b> " + lat + "<br>" +
@@ -147,7 +174,7 @@ navigator.geolocation.getCurrentPosition(function(position){
       "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
       "<b>Accuracy:</b> ±" + acc.toFixed(2) + " m<br>" +
       "<b>Status:</b> " + status + "<br>" +
-      "<b>Submission Type:</b> " + submissionType + "<br>";
+      "<b>Submission Type:</b> " + submissionType;
 
     document.getElementById("debugLink").href = formURL;
 
@@ -157,6 +184,9 @@ navigator.geolocation.getCurrentPosition(function(position){
 
   } else {
 
+    /* =========================
+       NORMAL MODE
+    ========================= */
     if(status === "VALID"){
 
       document.getElementById("statusText").innerHTML =
@@ -172,7 +202,6 @@ navigator.geolocation.getCurrentPosition(function(position){
         "❌ Outside allowed location.";
 
     }
-
   }
 
 }, function(){
