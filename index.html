@@ -17,10 +17,7 @@
       width: 80%;
       margin-left: auto;
       margin-right: auto;
-      background: #f9f9f9;
-    }
-    .info {
-      margin-top: 15px;
+      background: #f7f7f7;
     }
   </style>
 </head>
@@ -28,30 +25,25 @@
 <body>
 
 <h3 id="statusText">Verifying your location...</h3>
-<div id="details" class="info"></div>
+<div id="details"></div>
 
-<!-- 🔐 Secure Debug Panel (hidden by default) -->
 <div id="debugPanel">
-  <h4>🛠 Debug Mode (Admin Only)</h4>
+  <h4>🛠 Debug Mode</h4>
   <div id="debugContent"></div>
   <br>
-  <a id="debugLink" href="#" target="_blank">🔗 Open Form Manually</a>
+  <a id="debugLink" href="#" target="_blank">🔗 Open Form</a>
 </div>
 
 <script>
 /* =========================
-   🔐 SECURE DEBUG MODE
+   🔐 DEBUG MODE (SAFE)
 ========================= */
 const urlParams = new URLSearchParams(window.location.search);
-
-// Only this key activates debug
-const DEBUG_KEY = "UM_ADMIN_2026";
-
-let DEBUG = urlParams.get("debug") === DEBUG_KEY;
+const DEBUG = (urlParams.get("debug") || "").trim() === "UM_ADMIN_2026";
 
 if (DEBUG) {
   document.getElementById("debugPanel").style.display = "block";
-  console.log("🔐 Debug Mode Enabled");
+  console.log("DEBUG MODE ACTIVE");
 }
 
 /* =========================
@@ -64,22 +56,16 @@ const allowedRadius = 100;
 /* =========================
    TIME WINDOWS
 ========================= */
-const sub1Start = { h: 13, m: 0 };
-const sub1End   = { h: 13, m: 30 };
-
-const sub2Start = { h: 15, m: 0 };
-const sub2End   = { h: 15, m: 30 };
-
-/* =========================
-   FUNCTIONS
-========================= */
-function isWithin(start, end){
+function isWithin(startH, startM, endH, endM){
   const now = new Date();
-  const s = new Date(); s.setHours(start.h, start.m, 0);
-  const e = new Date(); e.setHours(end.h, end.m, 0);
-  return now >= s && now <= e;
+  const start = new Date(); start.setHours(startH, startM, 0);
+  const end = new Date(); end.setHours(endH, endM, 0);
+  return now >= start && now <= end;
 }
 
+/* =========================
+   DISTANCE FUNCTION
+========================= */
 function toRad(x){ return x * Math.PI / 180; }
 
 function calculateDistance(lat1, lon1, lat2, lon2){
@@ -111,43 +97,39 @@ navigator.geolocation.getCurrentPosition(function(position){
   let submissionType = "";
 
   /* =========================
-     SUBMISSION LOGIC
+     SAFE FLOW CONTROL
   ========================= */
+
   if (DEBUG) {
 
-    // 🔐 bypass everything in debug
+    // 🔥 FORCE OVERRIDE EVERYTHING
     submissionType = "DEBUG MODE";
 
   } else {
 
-    if(isWithin(sub1Start, sub1End)){
+    // ⏰ Submission #1
+    if (isWithin(13,0,13,30)) {
       submissionType = "Submission 1";
-      localStorage.setItem("attend1", "done");
+      localStorage.setItem("attend1","done");
+    }
 
-    } else if(isWithin(sub2Start, sub2End)){
+    // ⏰ Submission #2
+    else if (isWithin(15,0,15,30)) {
 
-      if(localStorage.getItem("attend1") === "done"){
+      if (localStorage.getItem("attend1") === "done") {
         submissionType = "Submission 2";
       } else {
         document.getElementById("statusText").innerHTML =
-          "❌ Submission #1 required before Submission #2.";
+          "❌ Must complete Submission #1 first";
         return;
       }
 
     } else {
       document.getElementById("statusText").innerHTML =
-        "❌ Not within allowed submission time.";
+        "❌ Outside submission time";
       return;
     }
   }
-
-  /* =========================
-     DISPLAY INFO
-  ========================= */
-  document.getElementById("details").innerHTML =
-    "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
-    "<b>Status:</b> <span style='color:" + (status==="VALID"?"green":"red") + "'>" + status + "</span><br>" +
-    "<b>Submission:</b> " + submissionType;
 
   /* =========================
      FORM URL
@@ -161,52 +143,50 @@ navigator.geolocation.getCurrentPosition(function(position){
     + "&r097aa67817864881a7c8c01602808a1b=" + encodeURIComponent(submissionType);
 
   /* =========================
-     DEBUG MODE OUTPUT
+     OUTPUT
   ========================= */
+
+  document.getElementById("details").innerHTML =
+    "Distance: " + dist.toFixed(2) + " m<br>" +
+    "Status: " + status + "<br>" +
+    "Type: " + submissionType;
+
   if (DEBUG) {
 
     document.getElementById("statusText").innerHTML =
       "🛠 Debug Mode (No Redirect)";
 
     document.getElementById("debugContent").innerHTML =
-      "<b>Latitude:</b> " + lat + "<br>" +
-      "<b>Longitude:</b> " + lon + "<br>" +
-      "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
-      "<b>Accuracy:</b> ±" + acc.toFixed(2) + " m<br>" +
-      "<b>Status:</b> " + status + "<br>" +
-      "<b>Submission Type:</b> " + submissionType;
+      "Lat: " + lat + "<br>" +
+      "Lon: " + lon + "<br>" +
+      "Distance: " + dist.toFixed(2) + "<br>" +
+      "Accuracy: ±" + acc.toFixed(2) + "<br>" +
+      "Status: " + status + "<br>" +
+      "Type: " + submissionType;
 
     document.getElementById("debugLink").href = formURL;
 
-    console.log("DEBUG DATA:", {
-      lat, lon, dist, acc, status, submissionType, formURL
-    });
+    console.log("FORM URL:", formURL);
 
   } else {
 
-    /* =========================
-       NORMAL MODE
-    ========================= */
-    if(status === "VALID"){
-
+    if (status === "VALID") {
       document.getElementById("statusText").innerHTML =
         "✅ Verified. Redirecting...";
 
       setTimeout(() => {
         window.location.href = formURL;
-      }, 1500);
+      }, 1200);
 
     } else {
-
       document.getElementById("statusText").innerHTML =
-        "❌ Outside allowed location.";
-
+        "❌ Not within allowed distance";
     }
   }
 
 }, function(){
   document.getElementById("statusText").innerHTML =
-    "❌ Please enable location.";
+    "❌ GPS permission denied";
 }, {
   enableHighAccuracy: true,
   timeout: 10000,
