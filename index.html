@@ -6,15 +6,10 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-    }
-    iframe {
-      width: 100%;
-      height: 900px;
-      border: none;
-      margin-top: 20px;
+      margin-top: 50px;
     }
     .info {
-      margin-top: 15px;
+      margin-top: 20px;
       font-size: 16px;
     }
   </style>
@@ -23,16 +18,12 @@
 <body>
 
 <h3 id="statusText">Verifying your location...</h3>
-
 <div id="details" class="info"></div>
-
-<!-- Form will load here -->
-<iframe id="formFrame" style="display:none;"></iframe>
 
 <script>
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
-const allowedRadius = 150; // meters
+const allowedRadius = 100; // meters
 
 function toRad(x) {
   return x * Math.PI / 180;
@@ -63,12 +54,11 @@ navigator.geolocation.getCurrentPosition(function(position) {
   const distance = calculateDistance(classLat, classLon, studentLat, studentLon);
 
   let status = "INVALID";
-
   if(distance <= allowedRadius){
       status = "VALID";
   }
 
-  // ✅ Show diagnostics to user
+  // Show diagnostics
   document.getElementById("details").innerHTML =
     "<b>Your Distance:</b> " + distance.toFixed(2) + " m<br>" +
     "<b>GPS Accuracy:</b> ±" + accuracy.toFixed(2) + " m<br>" +
@@ -78,27 +68,32 @@ navigator.geolocation.getCurrentPosition(function(position) {
   if(status === "VALID"){
 
       document.getElementById("statusText").innerHTML =
-          "✅ Location verified. Loading attendance form...";
+          "✅ Location verified. Redirecting to attendance form...";
 
       const formURL =
-      "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
-      + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(studentLat)
-      + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(studentLon)
-      + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(distance.toFixed(2))
-      + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status);
+        "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
+        + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(studentLat)
+        + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(studentLon)
+        + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(distance.toFixed(2))
+        + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status);
 
-      window.location.href = formURL;
+      console.log("Redirecting to:", formURL);
+
+      // ✅ Redirect instead of iframe (fixes your error)
+      setTimeout(() => {
+        window.location.href = formURL;
+      }, 1500);
 
   } else {
 
       document.getElementById("statusText").innerHTML =
-          "❌ Not within 150 m OR GPS not accurate enough.";
+          "❌ You are not within the allowed 100 m radius.";
 
   }
 
 }, function(error){
   document.getElementById("statusText").innerHTML =
-      "Location access denied. Please enable GPS and refresh.";
+      "❌ Location access denied. Please enable GPS and refresh.";
 }, {
   enableHighAccuracy: true,
   timeout: 10000,
