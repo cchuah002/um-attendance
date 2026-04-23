@@ -80,12 +80,15 @@ navigator.geolocation.getCurrentPosition(function(position) {
       document.getElementById("statusText").innerHTML =
           "✅ Location verified. Loading attendance form...";
 
+      const baseURL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u";
+
       const formURL =
-        "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
-        + "&r958810d0e940488d91f69e1d7e8b9287=" + studentLat
-        + "&r27336dc45ec8471c8f0e826133916aea=" + studentLon
-        + "&r4e931dc60dfa4ae0a91683796aa34472=" + distance
-        + "&r12931d7000c84132a2aeca7033fedbaa=" + status;
+            baseURL
+            + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(studentLat)
+            + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(studentLon)
+            + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(distance.toFixed(2))
+            + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status)
+            + "&accuracy=" + encodeURIComponent(accuracy.toFixed(2)); // optional extra field
 
       const iframe = document.getElementById("formFrame");
       iframe.src = formURL;
