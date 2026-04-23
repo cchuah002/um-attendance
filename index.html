@@ -6,10 +6,21 @@
     body {
       font-family: Arial;
       text-align: center;
-      margin-top: 50px;
+      margin-top: 40px;
     }
     .info {
+      margin-top: 15px;
+    }
+    #debugPanel {
+      display: none;
+      border: 1px solid #ccc;
+      padding: 15px;
       margin-top: 20px;
+      text-align: left;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f9f9f9;
     }
   </style>
 </head>
@@ -19,7 +30,28 @@
 <h3 id="statusText">Verifying your location...</h3>
 <div id="details" class="info"></div>
 
+<br>
+<label>
+  <input type="checkbox" id="debugToggle"> Enable Debug Mode
+</label>
+
+<div id="debugPanel">
+  <h4>🛠 Debug Panel</h4>
+  <div id="debugContent"></div>
+  <br>
+  <a id="debugLink" href="#" target="_blank">🔗 Open Form Manually</a>
+</div>
+
 <script>
+let DEBUG = false;
+
+document.getElementById("debugToggle").addEventListener("change", function() {
+  DEBUG = this.checked;
+  document.getElementById("debugPanel").style.display =
+    DEBUG ? "block" : "none";
+});
+
+// ---------- CONFIG ----------
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
 const allowedRadius = 100;
@@ -31,7 +63,7 @@ const sub1End   = { h: 13, m: 30 };
 const sub2Start = { h: 15, m: 0 };
 const sub2End   = { h: 15, m: 30 };
 
-// ---------- TIME CHECK ----------
+// ---------- FUNCTIONS ----------
 function isWithin(start, end){
   const now = new Date();
   const s = new Date(); s.setHours(start.h, start.m, 0);
@@ -39,7 +71,6 @@ function isWithin(start, end){
   return now >= s && now <= e;
 }
 
-// ---------- DISTANCE ----------
 function toRad(x){ return x * Math.PI / 180; }
 
 function calculateDistance(lat1, lon1, lat2, lon2){
@@ -66,12 +97,10 @@ navigator.geolocation.getCurrentPosition(function(position){
   const dist = calculateDistance(classLat, classLon, lat, lon);
 
   let status = (dist <= allowedRadius) ? "VALID" : "INVALID";
-
   let submissionType = "";
 
-  // ---------- Submission Logic ----------
+  // ---------- Submission logic ----------
   if(isWithin(sub1Start, sub1End)){
-
     submissionType = "Submission 1";
     localStorage.setItem("attend1", "done");
 
@@ -86,48 +115,69 @@ navigator.geolocation.getCurrentPosition(function(position){
     }
 
   } else {
-
     document.getElementById("statusText").innerHTML =
       "❌ Not within allowed submission time.";
     return;
   }
 
-  // ---------- Display info ----------
+  // ---------- Display basic info ----------
   document.getElementById("details").innerHTML =
     "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
-    "<b>Accuracy:</b> ±" + acc.toFixed(2) + " m<br>" +
-    "<b>Status:</b> " + status + "<br>" +
-    "<b>Type:</b> " + submissionType;
+    "<b>Status:</b> <span style='color:" + (status==="VALID"?"green":"red") + "'>" + status + "</span><br>" +
+    "<b>Submission:</b> " + submissionType;
 
-  if(status === "VALID"){
+  // ---------- Form URL ----------
+  const formURL =
+    "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUMlhWNlg3NzAwVUVNNk5UOTVZQzhLWEVMSy4u"
+    + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(lat)
+    + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(lon)
+    + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(dist.toFixed(2))
+    + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status)
+    + "&r097aa67817864881a7c8c01602808a1b=" + encodeURIComponent(submissionType);
+
+  // ---------- Debug mode ----------
+  if (DEBUG) {
 
     document.getElementById("statusText").innerHTML =
-      "✅ Verified. Redirecting...";
+      "🛠 Debug Mode: Redirect disabled";
 
-    const formURL =
-      "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUMlhWNlg3NzAwVUVNNk5UOTVZQzhLWEVMSy4u"
-      + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(lat)
-      + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(lon)
-      + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(dist.toFixed(2))
-      + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status)
-      + "&r097aa67817864881a7c8c01602808a1b=" + encodeURIComponent(submissionType);
+    document.getElementById("debugContent").innerHTML =
+      "<b>Latitude:</b> " + lat + "<br>" +
+      "<b>Longitude:</b> " + lon + "<br>" +
+      "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
+      "<b>Accuracy:</b> ±" + acc.toFixed(2) + " m<br>" +
+      "<b>Status:</b> " + status + "<br>" +
+      "<b>Submission Type:</b> " + submissionType + "<br>";
 
-    console.log("Form URL:", formURL);
+    document.getElementById("debugLink").href = formURL;
 
-    setTimeout(() => {
-      window.location.href = formURL;
-    }, 1500);
+    console.log("DEBUG DATA:", {
+      lat, lon, dist, acc, status, submissionType, formURL
+    });
 
   } else {
 
-    document.getElementById("statusText").innerHTML =
-      "❌ Outside allowed location.";
+    if(status === "VALID"){
+
+      document.getElementById("statusText").innerHTML =
+        "✅ Verified. Redirecting...";
+
+      setTimeout(() => {
+        window.location.href = formURL;
+      }, 1500);
+
+    } else {
+
+      document.getElementById("statusText").innerHTML =
+        "❌ Outside allowed location.";
+
+    }
 
   }
 
 }, function(){
   document.getElementById("statusText").innerHTML =
-    "❌ Enable location.";
+    "❌ Please enable location.";
 }, {
   enableHighAccuracy: true,
   timeout: 10000,
