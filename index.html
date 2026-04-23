@@ -87,9 +87,7 @@ navigator.geolocation.getCurrentPosition(function(position) {
       + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(distance.toFixed(2))
       + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status);
 
-      const iframe = document.getElementById("formFrame");
-      iframe.src = formURL;
-      iframe.style.display = "block";
+      window.location.href = formURL;
 
   } else {
 
