@@ -32,7 +32,7 @@
 <script>
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
-const allowedRadius = 110; // meters
+const allowedRadius = 150; // meters
 
 function toRad(x) {
   return x * Math.PI / 180;
@@ -94,7 +94,7 @@ navigator.geolocation.getCurrentPosition(function(position) {
   } else {
 
       document.getElementById("statusText").innerHTML =
-          "❌ Not within 110 m OR GPS not accurate enough.";
+          "❌ Not within 150 m OR GPS not accurate enough.";
 
   }
 
