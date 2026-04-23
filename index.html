@@ -64,7 +64,7 @@ navigator.geolocation.getCurrentPosition(function(position) {
 
   let status = "INVALID";
 
-  if(distance <= allowedRadius && accuracy <= 50){
+  if(distance <= allowedRadius){
       status = "VALID";
   }
 
