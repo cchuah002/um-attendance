@@ -4,13 +4,12 @@
   <title>UM Attendance Verification</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       text-align: center;
       margin-top: 50px;
     }
     .info {
       margin-top: 20px;
-      font-size: 16px;
     }
   </style>
 </head>
@@ -23,77 +22,112 @@
 <script>
 const classLat = 3.116635724520063;
 const classLon = 101.65595507854434;
-const allowedRadius = 100; // meters
+const allowedRadius = 100;
 
-function toRad(x) {
-  return x * Math.PI / 180;
+// ⏰ Time windows
+const sub1Start = { h: 13, m: 0 };
+const sub1End   = { h: 13, m: 30 };
+
+const sub2Start = { h: 15, m: 0 };
+const sub2End   = { h: 15, m: 30 };
+
+// ---------- TIME CHECK ----------
+function isWithin(start, end){
+  const now = new Date();
+  const s = new Date(); s.setHours(start.h, start.m, 0);
+  const e = new Date(); e.setHours(end.h, end.m, 0);
+  return now >= s && now <= e;
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
+// ---------- DISTANCE ----------
+function toRad(x){ return x * Math.PI / 180; }
+
+function calculateDistance(lat1, lon1, lat2, lon2){
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
 
   const a =
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.sin(dLat/2)**2 +
     Math.cos(toRad(lat1)) *
     Math.cos(toRad(lat2)) *
-    Math.sin(dLon/2) *
-    Math.sin(dLon/2);
+    Math.sin(dLon/2)**2;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-navigator.geolocation.getCurrentPosition(function(position) {
+// ---------- MAIN ----------
+navigator.geolocation.getCurrentPosition(function(position){
 
-  const studentLat = position.coords.latitude;
-  const studentLon = position.coords.longitude;
-  const accuracy = position.coords.accuracy;
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+  const acc = position.coords.accuracy;
 
-  const distance = calculateDistance(classLat, classLon, studentLat, studentLon);
+  const dist = calculateDistance(classLat, classLon, lat, lon);
 
-  let status = "INVALID";
-  if(distance <= allowedRadius){
-      status = "VALID";
-  }
+  let status = (dist <= allowedRadius) ? "VALID" : "INVALID";
 
-  // Show diagnostics
-  document.getElementById("details").innerHTML =
-    "<b>Your Distance:</b> " + distance.toFixed(2) + " m<br>" +
-    "<b>GPS Accuracy:</b> ±" + accuracy.toFixed(2) + " m<br>" +
-    "<b>Allowed Radius:</b> " + allowedRadius + " m<br>" +
-    "<b>Status:</b> " + status;
+  let submissionType = "";
 
-  if(status === "VALID"){
+  // ---------- Submission Logic ----------
+  if(isWithin(sub1Start, sub1End)){
 
+    submissionType = "Submission 1";
+    localStorage.setItem("attend1", "done");
+
+  } else if(isWithin(sub2Start, sub2End)){
+
+    if(localStorage.getItem("attend1") === "done"){
+      submissionType = "Submission 2";
+    } else {
       document.getElementById("statusText").innerHTML =
-          "✅ Location verified. Redirecting to attendance form...";
-
-      const formURL =
-        "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUQU8yTFFHODFXWUUyQlQ0RkZBN1hYTUcyMC4u"
-        + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(studentLat)
-        + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(studentLon)
-        + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(distance.toFixed(2))
-        + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status);
-
-      console.log("Redirecting to:", formURL);
-
-      // ✅ Redirect instead of iframe (fixes your error)
-      setTimeout(() => {
-        window.location.href = formURL;
-      }, 1500);
+        "❌ Submission #1 required before Submission #2.";
+      return;
+    }
 
   } else {
 
-      document.getElementById("statusText").innerHTML =
-          "❌ You are not within the allowed 100 m radius.";
+    document.getElementById("statusText").innerHTML =
+      "❌ Not within allowed submission time.";
+    return;
+  }
+
+  // ---------- Display info ----------
+  document.getElementById("details").innerHTML =
+    "<b>Distance:</b> " + dist.toFixed(2) + " m<br>" +
+    "<b>Accuracy:</b> ±" + acc.toFixed(2) + " m<br>" +
+    "<b>Status:</b> " + status + "<br>" +
+    "<b>Type:</b> " + submissionType;
+
+  if(status === "VALID"){
+
+    document.getElementById("statusText").innerHTML =
+      "✅ Verified. Redirecting...";
+
+    const formURL =
+      "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=qbE7psJIi0SGkzMXsAyn-3ei0yfHnBpAl7nvufhpYcZUMlhWNlg3NzAwVUVNNk5UOTVZQzhLWEVMSy4u"
+      + "&r958810d0e940488d91f69e1d7e8b9287=" + encodeURIComponent(lat)
+      + "&r27336dc45ec8471c8f0e826133916aea=" + encodeURIComponent(lon)
+      + "&r4e931dc60dfa4ae0a91683796aa34472=" + encodeURIComponent(dist.toFixed(2))
+      + "&r12931d7000c84132a2aeca7033fedbaa=" + encodeURIComponent(status)
+      + "&r097aa67817864881a7c8c01602808a1b=" + encodeURIComponent(submissionType);
+
+    console.log("Form URL:", formURL);
+
+    setTimeout(() => {
+      window.location.href = formURL;
+    }, 1500);
+
+  } else {
+
+    document.getElementById("statusText").innerHTML =
+      "❌ Outside allowed location.";
 
   }
 
-}, function(error){
+}, function(){
   document.getElementById("statusText").innerHTML =
-      "❌ Location access denied. Please enable GPS and refresh.";
+    "❌ Enable location.";
 }, {
   enableHighAccuracy: true,
   timeout: 10000,
