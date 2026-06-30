@@ -108,13 +108,13 @@ navigator.geolocation.getCurrentPosition(function(position){
   } else {
 
     // ⏰ Submission #1
-    if (isWithin(12,50,15,0)) {
+    if (isWithin(12,50,14,0)) {
       submissionType = "Submission 1";
       localStorage.setItem("attend1","done");
     }
 
     // ⏰ Submission #2
-    else if (isWithin(15,30,16,0)) {
+    else if (isWithin(14,30,16,0)) {
 
       if (localStorage.getItem("attend1") === "done") {
         submissionType = "Submission 2";
